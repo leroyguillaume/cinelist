@@ -1,0 +1,16 @@
+# Both images build from the repository root; they need the Cargo workspace
+# and the web sources, nothing else.
+.git
+.github
+.cargo
+**/target
+web/node_modules
+web/dist
+charts
+docs
+*.md
+*.png
+docker-compose.yaml
+# The images pin their own toolchain; the file would make rustup download
+# the components it lists.
+rust-toolchain.toml

@@ -1,0 +1,75 @@
+{{- $values := include "cinelist.values" (dict "ctx" $ "component" "web") | fromYaml }}
+{{- $name := include "cinelist.componentName" (dict "ctx" $ "component" "web") }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "cinelist.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  replicas: {{ $values.replicaCount }}
+  revisionHistoryLimit: {{ $values.revisionHistoryLimit }}
+  selector:
+    matchLabels:
+      {{- include "cinelist.selectorLabels" (dict "ctx" $ "component" "web") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "cinelist.selectorLabels" (dict "ctx" $ "component" "web") | nindent 8 }}
+      {{- with $values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ $name }}
+      automountServiceAccountToken: false
+      {{- with $values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml $values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: web
+          image: {{ include "cinelist.image" (dict "ctx" $ "values" $values) }}
+          imagePullPolicy: {{ $values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml $values.securityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8080
+          {{- with $values.extraEnv }}
+          env:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+          resources:
+            {{- toYaml $values.resources | nindent 12 }}
+          {{- with $values.extraVolumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with $values.extraVolumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -1,0 +1,3 @@
+INSERT INTO users (id, username)
+VALUES ($1, $2)
+ON CONFLICT DO NOTHING

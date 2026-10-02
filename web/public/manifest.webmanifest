@@ -1,0 +1,15 @@
+{
+  "name": "CineList",
+  "short_name": "CineList",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#192e41",
+  "theme_color": "#192e41",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

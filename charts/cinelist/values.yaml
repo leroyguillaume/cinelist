@@ -1,0 +1,216 @@
+# Values shared by the `api` and `web` components. Any key set again in a
+# component block overrides it for that component.
+global:
+  # -- (string) Hostname the Ingress and the HTTPRoute answer on.
+  host: ~
+  image:
+    # -- Registry the images are pulled from.
+    registry: ghcr.io
+    # -- Image pull policy.
+    pullPolicy: IfNotPresent
+  # -- (list) Secrets used to pull the images.
+  imagePullSecrets: []
+  # -- Number of old ReplicaSets each Deployment keeps for rollback.
+  revisionHistoryLimit: 3
+  # Pod-level security context of every workload.
+  podSecurityContext:
+    # -- Run every container as a non-root user.
+    runAsNonRoot: true
+    # -- User the containers run as; matches the images' `USER`.
+    runAsUser: 65532
+    # -- Group the containers run as.
+    runAsGroup: 65532
+    # -- Group owning mounted volumes.
+    fsGroup: 65532
+    # Seccomp profile of the pods.
+    seccompProfile:
+      # -- Seccomp profile type.
+      type: RuntimeDefault
+  # Container-level security context of every workload.
+  securityContext:
+    # -- Forbid privilege escalation.
+    allowPrivilegeEscalation: false
+    # -- Mount the root filesystem read-only; neither server writes to disk.
+    readOnlyRootFilesystem: true
+    # Linux capabilities.
+    capabilities:
+      # -- Capabilities dropped from every container.
+      drop:
+        - ALL
+  # -- (object) Annotations added to every pod.
+  podAnnotations: {}
+  # -- (object) Node selector of every pod.
+  nodeSelector: {}
+  # -- (list) Tolerations of every pod.
+  tolerations: []
+  # -- (object) Affinity of every pod.
+  affinity: {}
+
+# The HTTP API, served under `/api`.
+api:
+  image:
+    # -- Image repository.
+    repository: leroyguillaume/cinelist-api
+    # -- (string) Image tag. Defaults to the chart's `appVersion`.
+    tag: ~
+  # -- Number of API pods.
+  replicaCount: 1
+  # -- `tracing` filter directive (e.g. `info`, `cinelist_api=debug`).
+  logFilter: info
+  # -- Days an issued JWT stays valid.
+  tokenTtlDays: 30
+  # -- Days an invitation link stays valid.
+  invitationTtlDays: 7
+  # -- Mark the session cookie `Secure`. Disable only when the site is served over plain HTTP.
+  cookieSecure: true
+  admin:
+    # -- Username of the administrator, created or updated at startup.
+    username: admin
+    # -- (string) Password of the administrator, stored in a generated Secret. Required unless `existingSecret.name` is set.
+    password: ~
+    existingSecret:
+      # -- (string) Name of a pre-existing Secret holding the administrator password. Set → takes precedence over `password`.
+      name: ~
+      # -- Key of that Secret holding the password.
+      key: ADMIN_PASSWORD
+  jwt:
+    # -- (string) Secret signing the JWTs, at least 32 bytes, stored in a generated Secret. Required unless `existingSecret.name` is set. Changing it signs everyone out.
+    secret: ~
+    existingSecret:
+      # -- (string) Name of a pre-existing Secret holding the JWT signing secret. Set → takes precedence over `secret`.
+      name: ~
+      # -- Key of that Secret holding the signing secret.
+      key: JWT_SECRET
+  database:
+    # -- (string) Postgres connection string, stored in a generated Secret. Ignored when `postgres.enabled` is true or `existingSecret.name` is set.
+    url: ~
+    existingSecret:
+      # -- (string) Name of a pre-existing Secret holding the connection string. Set → takes precedence over `url`.
+      name: ~
+      # -- Key of that Secret holding the connection string.
+      key: DATABASE_URL
+    # -- Largest number of pooled database connections per pod.
+    maxConnections: 10
+  # Extra CA certificates trusted for the TLS connection to an external Postgres
+  # (read through `PGSSLROOTCERT`). The CloudNativePG cluster's CA is trusted on its own.
+  caCerts:
+    # -- (string) Inline PEM bundle. Stored in a Secret and mounted. Ignored when `existing.name` is set.
+    inline: ~
+    # Mount the PEM bundle from a resource you already manage, instead of `inline`. Takes precedence over `inline` when `name` is set.
+    existing:
+      # -- (string) Kind of the resource: `ConfigMap` or `Secret`.
+      kind: ConfigMap
+      # -- (string) Name of the resource. Set → mounts from it instead of generating a Secret from `inline`.
+      name: ~
+      # -- Key in the resource holding the PEM bundle (also the mounted file name).
+      key: ca-certificates.crt
+  service:
+    # -- Port of the API Service.
+    port: 8080
+  # Resources of the API container.
+  resources:
+    requests:
+      # -- CPU request.
+      cpu: 20m
+      # -- Memory request.
+      memory: 32Mi
+      # -- Ephemeral storage request.
+      ephemeral-storage: 16Mi
+    limits:
+      # -- Memory limit.
+      memory: 128Mi
+      # -- Ephemeral storage limit.
+      ephemeral-storage: 64Mi
+  # -- (list) Extra environment variables of the API container.
+  extraEnv: []
+  # -- (list) Extra volumes of the API pods.
+  extraVolumes: []
+  # -- (list) Extra volume mounts of the API container.
+  extraVolumeMounts: []
+
+# The web front: static files served on `/`.
+web:
+  image:
+    # -- Image repository.
+    repository: leroyguillaume/cinelist-web
+    # -- (string) Image tag. Defaults to the chart's `appVersion`.
+    tag: ~
+  # -- Number of web pods.
+  replicaCount: 1
+  service:
+    # -- Port of the web Service.
+    port: 8080
+  # Resources of the web container.
+  resources:
+    requests:
+      # -- CPU request.
+      cpu: 10m
+      # -- Memory request.
+      memory: 16Mi
+      # -- Ephemeral storage request.
+      ephemeral-storage: 16Mi
+    limits:
+      # -- Memory limit.
+      memory: 64Mi
+      # -- Ephemeral storage limit.
+      ephemeral-storage: 64Mi
+  # -- (list) Extra environment variables of the web container.
+  extraEnv: []
+  # -- (list) Extra volumes of the web pods.
+  extraVolumes: []
+  # -- (list) Extra volume mounts of the web container.
+  extraVolumeMounts: []
+
+# A CloudNativePG cluster holding the database. Needs the CloudNativePG operator.
+postgres:
+  # -- Create the cluster. Disable to use `api.database` instead.
+  enabled: true
+  # -- Number of Postgres instances.
+  instances: 1
+  # -- (string) Postgres image. Defaults to the operator's.
+  imageName: ~
+  storage:
+    # -- Size of each instance's volume.
+    size: 1Gi
+    # -- (string) Storage class of the volumes. Defaults to the cluster's.
+    storageClass: ~
+  # Resources of each Postgres instance.
+  resources:
+    requests:
+      # -- CPU request.
+      cpu: 50m
+      # -- Memory request.
+      memory: 256Mi
+      # -- Ephemeral storage request.
+      ephemeral-storage: 64Mi
+    limits:
+      # -- Memory limit.
+      memory: 512Mi
+      # -- Ephemeral storage limit.
+      ephemeral-storage: 256Mi
+
+# An Ingress sending `/api` to the API and everything else to the web front.
+ingress:
+  # -- Create the Ingress.
+  enabled: false
+  # -- (string) Ingress class.
+  className: ~
+  # -- (object) Annotations of the Ingress.
+  annotations: {}
+  tls:
+    # -- (string) Secret holding the TLS certificate of `host`. Unset → no TLS section.
+    secretName: ~
+
+# An HTTPRoute (Gateway API) sending `/api` to the API and everything else to the web front.
+httpRoute:
+  # -- Create the HTTPRoute.
+  enabled: false
+  gateway:
+    # -- (string) Name of the existing Gateway to attach to. Required when enabled.
+    name: ~
+    # -- (string) Namespace of that Gateway. Defaults to the release namespace.
+    namespace: ~
+    # -- (string) Listener of that Gateway to attach to.
+    sectionName: ~
+  # -- (object) Annotations of the HTTPRoute.
+  annotations: {}

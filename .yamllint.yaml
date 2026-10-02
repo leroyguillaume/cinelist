@@ -1,0 +1,16 @@
+extends: default
+
+rules:
+  # yaml-conventions: no `---` opening a file.
+  document-start:
+    present: false
+  # yaml-conventions: block style only. `non-empty` still allows `{}` / `[]`.
+  braces:
+    forbid: non-empty
+  brackets:
+    forbid: non-empty
+  # A digest-pinned image or an action SHA with its tag comment is long by construction.
+  line-length: disable
+  # GitHub Actions' `on:` key reads as a boolean to YAML 1.1.
+  truthy:
+    check-keys: false

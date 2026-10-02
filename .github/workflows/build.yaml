@@ -1,0 +1,187 @@
+name: build
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - api/**
+      - web/**
+      - Cargo.toml
+      - Cargo.lock
+      - .dockerignore
+      - .github/actions/build-image/**
+      - .github/workflows/build.yaml
+  pull_request:
+    paths:
+      - api/**
+      - web/**
+      - Cargo.toml
+      - Cargo.lock
+      - .dockerignore
+      - .github/actions/build-image/**
+      - .github/workflows/build.yaml
+  workflow_dispatch:
+    inputs:
+      push:
+        description: Push the images to GHCR
+        type: boolean
+        default: false
+      version:
+        description: Version the images are tagged with (e.g. 1.2.3)
+        type: string
+        required: false
+  workflow_call:
+    inputs:
+      push:
+        type: boolean
+        default: false
+      version:
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: ${{ !inputs.push }}
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - api
+          - web
+        platform:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.platform.runner }}
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: build and scan the image
+        uses: ./.github/actions/build-image
+        with:
+          image: ${{ matrix.image }}
+          arch: ${{ matrix.platform.arch }}
+
+  publish:
+    if: inputs.push
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - api
+          - web
+        platform:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.platform.runner }}
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+    env:
+      IMAGE: ghcr.io/${{ github.repository_owner }}/cinelist-${{ matrix.image }}
+    steps:
+      - name: refuse to publish from a branch other than the default one
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          if [ "${GITHUB_REF_TYPE}" != tag ] && [ "${GITHUB_REF_NAME}" != "${DEFAULT_BRANCH}" ]; then
+            echo "Images are published from a tag or from ${DEFAULT_BRANCH}, not from ${GITHUB_REF_NAME}." >&2
+            exit 1
+          fi
+      - name: check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: build and scan the image
+        id: image
+        uses: ./.github/actions/build-image
+        with:
+          image: ${{ matrix.image }}
+          arch: ${{ matrix.platform.arch }}
+      - name: log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f  # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: push the image by digest
+        id: push
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc  # v7.4.0
+        with:
+          context: .
+          file: ${{ matrix.image }}/Dockerfile
+          platforms: linux/${{ matrix.platform.arch }}
+          labels: ${{ steps.image.outputs.labels }}
+          outputs: type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=${{ matrix.image }}-${{ matrix.platform.arch }}
+      - name: record the digest
+        env:
+          DIGEST: ${{ steps.push.outputs.digest }}
+        run: |
+          mkdir -p /tmp/digests
+          touch "/tmp/digests/${DIGEST#sha256:}"
+      - name: upload the digest
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: digest-${{ matrix.image }}-${{ matrix.platform.arch }}
+          path: /tmp/digests/*
+          retention-days: 1
+
+  manifest:
+    needs: publish
+    strategy:
+      matrix:
+        image:
+          - api
+          - web
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE: ghcr.io/${{ github.repository_owner }}/cinelist-${{ matrix.image }}
+    steps:
+      - name: download the digests
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          pattern: digest-${{ matrix.image }}-*
+          path: /tmp/digests
+          merge-multiple: true
+      - name: derive the image tags
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302  # v6.2.0
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=semver,pattern={{version}},value=${{ inputs.version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ inputs.version }}
+            type=raw,value=latest,enable=${{ inputs.version != '' && !contains(inputs.version, '-') }}
+            type=sha
+      - name: set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069  # v4.4.1
+      - name: log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f  # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: create the multi-arch manifest
+        working-directory: /tmp/digests
+        run: |
+          # shellcheck disable=SC2046
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf "${IMAGE}@sha256:%s " *)

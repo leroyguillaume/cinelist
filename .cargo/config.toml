@@ -1,0 +1,9 @@
+# Development defaults for `cargo run` and `cargo test`, pointing at the
+# docker-compose stack. Cargo applies `[env]` only to the processes it spawns:
+# a binary started by hand, or in a container, gets none of this. A variable
+# already set in the environment always wins.
+[env]
+DATABASE_URL = "postgres://cinelist:cinelist@localhost:5442/cinelist"
+ADMIN_PASSWORD = "admin"
+COOKIE_SECURE = "false"
+JWT_SECRET = "c52ba116b16b4e3b9b47134601f296df088e55e681ccd0436833178e6fbeb767"

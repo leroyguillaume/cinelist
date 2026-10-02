@@ -1,0 +1,17 @@
+# Checks the images and the chart deliberately does not satisfy, each with its reason. A
+# finding the chart can fix is fixed in the chart, never listed here.
+misconfigurations:
+  - id: DS-0026
+    statement: >-
+      The images are `FROM scratch` with no shell and no HTTP client for a
+      `HEALTHCHECK` to run. Kubernetes ignores that instruction anyway; the
+      chart's liveness and readiness probes check both servers.
+  - id: KSV-0011
+    statement: >-
+      No `resources.limits.cpu`, chart-wide and deliberate. CPU is compressible,
+      so a limit throttles rather than protects. Memory and ephemeral-storage
+      limits are set.
+  - id: KSV-0110
+    statement: >-
+      Templates carry no `metadata.namespace`: the release namespace comes from
+      `helm install --namespace`, and hardcoding it would be the actual defect.

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <title>CineList</title>
+  <rect width="64" height="64" rx="14" fill="#192E41"/>
+  <clipPath id="frame"><rect x="10" y="12" width="44" height="40" rx="6"/></clipPath>
+  <g clip-path="url(#frame)">
+    <rect x="10" y="12" width="44" height="40" fill="#FCA206"/>
+    <path fill="#ED7F23" d="M10 12h11v10H10zM43 12h11v10H43zM10 42h11v10H10zM43 42h11v10H43z"/>
+  </g>
+</svg>

@@ -1,0 +1,156 @@
+{{- include "cinelist.caCertsValidate" . }}
+{{- $values := include "cinelist.values" (dict "ctx" $ "component" "api") | fromYaml }}
+{{- $name := include "cinelist.componentName" (dict "ctx" $ "component" "api") }}
+{{- $postgresCa := and .Values.postgres.enabled (not .Values.api.database.existingSecret.name) }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "cinelist.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+spec:
+  replicas: {{ $values.replicaCount }}
+  revisionHistoryLimit: {{ $values.revisionHistoryLimit }}
+  selector:
+    matchLabels:
+      {{- include "cinelist.selectorLabels" (dict "ctx" $ "component" "api") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "cinelist.selectorLabels" (dict "ctx" $ "component" "api") | nindent 8 }}
+      annotations:
+        {{- if not .Values.api.admin.existingSecret.name }}
+        checksum/admin: {{ include (print $.Template.BasePath "/api/secret/admin.yaml") . | sha256sum }}
+        {{- end }}
+        {{- if not .Values.api.jwt.existingSecret.name }}
+        checksum/jwt: {{ include (print $.Template.BasePath "/api/secret/jwt.yaml") . | sha256sum }}
+        {{- end }}
+        {{- if include "cinelist.generateDatabaseSecret" . }}
+        checksum/database: {{ include (print $.Template.BasePath "/api/secret/database.yaml") . | sha256sum }}
+        {{- end }}
+        {{- if include "cinelist.caCertsGenerateSecret" . }}
+        checksum/ca-certs: {{ include (print $.Template.BasePath "/api/secret/ca-certs.yaml") . | sha256sum }}
+        {{- end }}
+        {{- with $values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ $name }}
+      automountServiceAccountToken: false
+      {{- with $values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml $values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: api
+          image: {{ include "cinelist.image" (dict "ctx" $ "values" $values) }}
+          imagePullPolicy: {{ $values.image.pullPolicy }}
+          securityContext:
+            {{- toYaml $values.securityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: BIND_ADDR
+              value: "0.0.0.0:8080"
+            - name: LOG_FILTER
+              value: {{ $values.logFilter | quote }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "cinelist.databaseSecretName" . }}
+                  key: {{ include "cinelist.databaseSecretKey" . }}
+            - name: DATABASE_MAX_CONNECTIONS
+              value: {{ $values.database.maxConnections | quote }}
+            - name: ADMIN_USERNAME
+              value: {{ $values.admin.username | quote }}
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "cinelist.adminSecretName" . }}
+                  key: {{ include "cinelist.adminSecretKey" . }}
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "cinelist.jwtSecretName" . }}
+                  key: {{ include "cinelist.jwtSecretKey" . }}
+            - name: TOKEN_TTL_DAYS
+              value: {{ $values.tokenTtlDays | quote }}
+            - name: INVITATION_TTL_DAYS
+              value: {{ $values.invitationTtlDays | quote }}
+            - name: COOKIE_SECURE
+              value: {{ $values.cookieSecure | quote }}
+            {{- if $postgresCa }}
+            - name: PGSSLMODE
+              value: verify-full
+            - name: PGSSLROOTCERT
+              value: /etc/cinelist/postgres-ca/ca.crt
+            {{- else if include "cinelist.caCertsEnabled" . }}
+            - name: PGSSLROOTCERT
+              value: {{ include "cinelist.caCertsPath" . }}
+            {{- end }}
+            {{- with $values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+          resources:
+            {{- toYaml $values.resources | nindent 12 }}
+          volumeMounts:
+            {{- if $postgresCa }}
+            - name: postgres-ca
+              mountPath: /etc/cinelist/postgres-ca
+              readOnly: true
+            {{- else if include "cinelist.caCertsEnabled" . }}
+            - name: ca-certs
+              mountPath: /etc/cinelist/ca-certs
+              readOnly: true
+            {{- end }}
+            {{- with $values.extraVolumeMounts }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+      volumes:
+        {{- if $postgresCa }}
+        - name: postgres-ca
+          secret:
+            secretName: {{ include "cinelist.postgresName" . }}-ca
+            items:
+              - key: ca.crt
+                path: ca.crt
+        {{- else if include "cinelist.caCertsEnabled" . }}
+        - name: ca-certs
+          {{- if include "cinelist.caCertsFromConfigMap" . }}
+          configMap:
+            name: {{ include "cinelist.caCertsName" . }}
+          {{- else }}
+          secret:
+            secretName: {{ include "cinelist.caCertsName" . }}
+          {{- end }}
+            items:
+              - key: {{ include "cinelist.caCertsKey" . }}
+                path: {{ include "cinelist.caCertsKey" . }}
+        {{- end }}
+        {{- with $values.extraVolumes }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with $values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

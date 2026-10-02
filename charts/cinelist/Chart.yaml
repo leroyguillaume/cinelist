@@ -1,0 +1,14 @@
+apiVersion: v2
+name: cinelist
+description: Film lists and the elimination rounds that pick what to watch next.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+annotations:
+  artifacthub.io/license: Apache-2.0
+home: https://github.com/leroyguillaume/cinelist
+sources:
+  - https://github.com/leroyguillaume/cinelist
+maintainers:
+  - name: Guillaume Leroy
+    email: pro.guillaume.leroy@gmail.com

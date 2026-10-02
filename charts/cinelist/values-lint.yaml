@@ -1,0 +1,17 @@
+# Values `helm lint` and `trivy config` render the chart with: the defaults
+# plus what a real install must provide.
+global:
+  host: cinelist.example.com
+api:
+  admin:
+    password: lint-only-password
+  jwt:
+    secret: lint-only-jwt-secret-0123456789abcdef
+ingress:
+  enabled: true
+  tls:
+    secretName: cinelist-tls
+httpRoute:
+  enabled: true
+  gateway:
+    name: gateway

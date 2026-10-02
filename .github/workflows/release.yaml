@@ -1,0 +1,75 @@
+name: release
+
+on:
+  push:
+    tags:
+      - v*
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  version:
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - name: derive the version from the tag
+        id: version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          for manifest in api/Cargo.toml; do
+            committed="$(sed -n 's/^version = "\(.*\)"$/\1/p' "$manifest")"
+            if [ "$committed" != "$version" ]; then
+              echo "${manifest} says ${committed} but the tag says ${version}." >&2
+              echo "Cut releases with scripts/release.sh so the two stay in step." >&2
+              exit 1
+            fi
+          done
+          committed="$(jq -r .version web/package.json)"
+          if [ "$committed" != "$version" ]; then
+            echo "web/package.json says ${committed} but the tag says ${version}." >&2
+            echo "Cut releases with scripts/release.sh so the two stay in step." >&2
+            exit 1
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: version
+    uses: ./.github/workflows/build.yaml
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+    with:
+      push: true
+      version: ${{ needs.version.outputs.version }}
+
+  github-release:
+    if: ${{ !contains(github.ref_name, '-') }}
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: create the GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          previous="$(git tag --list 'v*' | grep -v -- - | sort -V \
+            | awk -v current="$GITHUB_REF_NAME" '$0 == current { print last; exit } { last = $0 }')"
+          args=()
+          if [ -n "$previous" ]; then
+            args=(--notes-start-tag "$previous")
+          fi
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --generate-notes --verify-tag "${args[@]}"

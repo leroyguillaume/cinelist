@@ -1,0 +1,9 @@
+# Registries KSV-0125 accepts on top of its built-in list. The images are
+# published to GHCR, which that list does not contain. The `ksv0125` key is the
+# data namespace the check reads (`data.ksv0125.trusted_registries`); renaming
+# it silently restores the default list.
+#
+# Loaded by `trivy config --config-data trivy/data`.
+ksv0125:
+  trusted_registries:
+    - ghcr.io
