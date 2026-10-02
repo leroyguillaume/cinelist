@@ -99,10 +99,10 @@ repos:
         name: trivy config (chart)
         entry: >-
           trivy config --quiet --exit-code 1
-          --config-data trivy/data --ignorefile .trivyignore.yaml
+          --config-data .trivy/data --ignorefile .trivyignore.yaml
           --helm-values charts/cinelist/values-lint.yaml charts/cinelist
         language: system
-        files: ^(charts/|trivy/|\.trivyignore\.yaml$)
+        files: ^(charts/|\.trivy/|\.trivyignore\.yaml$)
         pass_filenames: false
       - id: trivy-dockerfile
         name: trivy config (Dockerfile)

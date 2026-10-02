@@ -120,7 +120,7 @@ pre-commit run <hook-id> --all-files
 | `shellcheck` | shell scripts | fix the script |
 | `no-co-authors` | commit messages carry no co-author or "generated with" line | reword the commit |
 
-Trivy reads [trivy/data/](trivy/data) (registries trusted by KSV-0125) and
+Trivy reads [.trivy/data/](.trivy/data) (registries trusted by KSV-0125) and
 [.trivyignore.yaml](.trivyignore.yaml), where each check the chart does not
 satisfy carries its reason.
 
