@@ -138,7 +138,7 @@ kubectl --namespace cinelist create secret generic cinelist-jwt --from-literal=J
 ```
 
 ```sh
-helm install cinelist oci://ghcr.io/leroyguillaume/charts/cinelist --version <chart-version> --namespace cinelist --set global.host=<hostname> --set api.admin.existingSecret.name=cinelist-admin --set api.jwt.existingSecret.name=cinelist-jwt --set httpRoute.enabled=true --set httpRoute.gateway.name=<gateway> --set httpRoute.gateway.namespace=<gateway-namespace>
+helm install cinelist oci://ghcr.io/leroyguillaume/charts/cinelist --version 0.1.0 --namespace cinelist --set global.host=<hostname> --set api.admin.existingSecret.name=cinelist-admin --set api.jwt.existingSecret.name=cinelist-jwt --set httpRoute.enabled=true --set httpRoute.gateway.name=<gateway> --set httpRoute.gateway.namespace=<gateway-namespace>
 ```
 
 Releases are cut with [scripts/release.sh](scripts/release.sh), as described in
