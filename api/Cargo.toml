@@ -11,18 +11,18 @@ publish = false
 workspace = true
 
 [dependencies]
-aide = { version = "0.15.1", features = ["axum", "axum-extra-cookie", "axum-json", "axum-query", "macros"] }
+aide = { version = "0.16.0-alpha.4", features = ["axum", "axum-extra-cookie", "axum-json", "axum-query", "macros"] }
 anyhow = "1.0.104"
 argon2 = "0.6.0"
 axum = { version = "0.8.9", features = ["macros"] }
-axum-extra = { version = "0.10", features = ["cookie"] }
+axum-extra = { version = "0.12.6", features = ["cookie"] }
 base64 = "0.23.1"
 chrono = { version = "0.4.45", default-features = false, features = ["clock", "serde", "std"] }
 clap = { version = "4.6.7", features = ["derive", "env"] }
 indexmap = "2.14.2"
 jsonwebtoken = { version = "11.1.0", default-features = false, features = ["rust_crypto"] }
 rand = "0.10.3"
-schemars = { version = "0.9", features = ["chrono04", "uuid1"] }
+schemars = { version = "1.2.3", features = ["chrono04", "uuid1"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 sha2 = "0.11.0"
