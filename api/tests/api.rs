@@ -191,6 +191,18 @@ async fn serves_the_openapi_document_and_its_reference(pool: PgPool) {
 }
 
 #[sqlx::test(migrator = "MIGRATOR")]
+async fn names_each_page_schema_after_its_items(pool: PgPool) {
+    let mut client = Client::new(pool).await;
+    let openapi = client.get("/api/openapi.json").await;
+    let schema = &openapi.body["paths"]["/api/v1/lists"]["get"]["responses"]["200"]["content"]["application/json"]
+        ["schema"]["$ref"];
+    assert_eq!(
+        schema,
+        "#/components/schemas/PageResponse_for_ListSummaryResponse"
+    );
+}
+
+#[sqlx::test(migrator = "MIGRATOR")]
 async fn rejects_anonymous_requests(pool: PgPool) {
     let mut client = Client::new(pool).await;
     let reply = client.get("/api/v1/lists").await;

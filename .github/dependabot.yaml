@@ -24,6 +24,14 @@ updates:
     cooldown:
       default-days: 3
     groups:
+      # aide's traits only match the axum, axum-extra and schemars it is built
+      # against: bumped one at a time, each PR fails to build.
+      aide:
+        patterns:
+          - aide
+          - axum
+          - axum-extra
+          - schemars
       cargo:
         update-types:
           - minor

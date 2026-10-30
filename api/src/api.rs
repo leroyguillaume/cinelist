@@ -182,6 +182,9 @@ impl PageQuery {
 
 #[derive(Serialize, JsonSchema)]
 #[serde(rename_all = "camelCase")]
+// Without it, schemars 1 names the instances `PageResponse`, `PageResponse2`, …
+// in whatever order the routes register them.
+#[schemars(rename = "PageResponse_for_{T}")]
 pub struct PageResponse<T> {
     items: Vec<T>,
     page: u32,
