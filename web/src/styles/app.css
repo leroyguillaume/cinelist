@@ -412,6 +412,7 @@ textarea.input {
 .page {
   width: 100%;
   max-width: 1120px;
+  margin-inline: auto;
   padding: 12px 16px 32px;
   display: flex;
   flex-direction: column;
