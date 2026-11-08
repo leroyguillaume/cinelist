@@ -15,6 +15,11 @@ export class ApiError extends Error {
   }
 }
 
+/** Whether `error` is a request that never reached the server because the device is offline. */
+export function isOfflineError(error: unknown): boolean {
+  return error instanceof TypeError && !navigator.onLine;
+}
+
 type Method = "GET" | "POST" | "PUT" | "DELETE";
 
 async function send(method: Method, path: string, body?: unknown): Promise<Response> {

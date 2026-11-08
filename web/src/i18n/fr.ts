@@ -197,6 +197,7 @@ export const fr = {
   },
   errors: {
     generic: "Quelque chose s'est mal passé. Réessaie.",
+    offline: "Tu es hors ligne. CineList recharge tout seul dès que la connexion revient.",
     not_found: "Introuvable.",
     unauthenticated: "Ta session a expiré, reconnecte-toi.",
     forbidden: "Tu n'as pas accès à cette page.",

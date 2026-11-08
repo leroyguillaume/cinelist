@@ -55,7 +55,11 @@ The React single-page application. It has no server of its own: the image
 serves the build output with `static-web-server`, falling back to
 `index.html` for client-side routes. Every piece of data comes from the API,
 through TanStack Query, and every response is validated with `zod` before use.
-Translations live in [`web/src/i18n/`](web/src/i18n).
+Translations live in [`web/src/i18n/`](web/src/i18n). Queries run whether
+or not the device is online
+([`createQueryClient`](web/src/lib/queries.ts)): offline, a query fails at
+once and the page shows an offline message instead of a loading screen that
+never ends, and coming back online refetches every query that failed.
 
 The front is an installable web app. `vite-plugin-pwa`, configured in
 [`web/vite.config.ts`](web/vite.config.ts), writes the web manifest, renders
@@ -226,4 +230,5 @@ deletes its whole history.
   invitation link, and sends it by hand.
 - The interface exists in French and English only.
 - Offline, the app opens but cannot show or change anything: every piece of
-  data comes from the API, which is never cached.
+  data comes from the API, which is never cached. It says it is offline, and
+  refetches what failed once the connection is back.
