@@ -11,9 +11,11 @@ FROM joseluisq/static-web-server:2.44.1@sha256:94618e3d17802265a21926217e6f9e783
 FROM scratch
 COPY --from=server /static-web-server /usr/local/bin/static-web-server
 COPY --from=web /usr/local/src/cinelist/web/dist /usr/share/cinelist/public
+COPY web/sws.toml /etc/cinelist/sws.toml
 ENV SERVER_HOST=0.0.0.0 \
     SERVER_PORT=8080 \
     SERVER_ROOT=/usr/share/cinelist/public \
+    SERVER_CONFIG_FILE=/etc/cinelist/sws.toml \
     SERVER_FALLBACK_PAGE=/usr/share/cinelist/public/index.html \
     SERVER_HEALTH=true \
     SERVER_LOG_LEVEL=info

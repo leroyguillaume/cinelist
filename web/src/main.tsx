@@ -2,6 +2,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router";
+import { UpdatePrompt } from "./components/UpdatePrompt";
 import { initI18n } from "./i18n";
 import { createQueryClient } from "./lib/queries";
 import { router } from "./router";
@@ -17,6 +18,7 @@ void initI18n().then(() => {
     <StrictMode>
       <QueryClientProvider client={createQueryClient()}>
         <RouterProvider router={router} />
+        <UpdatePrompt />
       </QueryClientProvider>
     </StrictMode>,
   );

@@ -190,6 +190,11 @@ export const fr = {
     reset: "Réinitialiser le mot de passe",
     confirmDelete: "Supprimer {{username}} et toutes ses listes ?",
   },
+  update: {
+    available: "Une nouvelle version de CineList est disponible.",
+    reload: "Recharger",
+    later: "Plus tard",
+  },
   errors: {
     generic: "Quelque chose s'est mal passé. Réessaie.",
     not_found: "Introuvable.",

@@ -191,6 +191,11 @@ export const en: Messages = {
     reset: "Reset the password",
     confirmDelete: "Delete {{username}} and all their lists?",
   },
+  update: {
+    available: "A new version of CineList is available.",
+    reload: "Reload",
+    later: "Later",
+  },
   errors: {
     generic: "Something went wrong. Try again.",
     not_found: "Not found.",
