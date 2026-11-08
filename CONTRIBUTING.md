@@ -88,6 +88,20 @@ One file while iterating:
 npm --prefix web test -- src/pages/SelectionPage.test.tsx
 ```
 
+The service worker is off under `npm run dev`, so it never serves stale
+modules over hot reload. To try it — installing the app, opening it offline,
+the update prompt after a rebuild — build the front and serve the output on
+<http://localhost:4173>, which forwards `/api` to the API like the dev
+server:
+
+```sh
+npm --prefix web run build
+```
+
+```sh
+npm --prefix web run preview
+```
+
 A new behaviour comes with a test, and a fix with a test that failed before it.
 
 ## Pre-commit hooks

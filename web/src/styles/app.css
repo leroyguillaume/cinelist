@@ -493,6 +493,28 @@ textarea.input {
   color: var(--danger-text);
 }
 
+.update-prompt {
+  position: fixed;
+  inset-inline: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 20;
+  max-width: 440px;
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 6px 8px 16px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
+}
+
+.update-prompt-text {
+  flex-grow: 1;
+  font-size: 14px;
+}
+
 /* Lists */
 
 .list-cards {

@@ -1,0 +1,14 @@
+# static-web-server settings of the web image, on top of its SERVER_*
+# variables: only the build's hashed assets are cached for good; every other
+# file, the service worker and index.html included, is revalidated on each use.
+
+[general]
+cache-control-headers = false
+
+[[advanced.headers]]
+source = "**"
+headers = { Cache-Control = "no-cache" }
+
+[[advanced.headers]]
+source = "/assets/**"
+headers = { Cache-Control = "public, max-age=31536000, immutable" }

@@ -24,6 +24,8 @@ case the film eliminated last takes its place.
   invitation link. There is no sign-up and no e-mail.
 - The interface is available in French and English, and designed for phones
   first.
+- It installs as an app from the browser, on a phone's home screen or a
+  desktop, and offers to reload when a new version is deployed.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for the design and the reasoning behind it.
 

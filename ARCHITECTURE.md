@@ -57,6 +57,19 @@ serves the build output with `static-web-server`, falling back to
 through TanStack Query, and every response is validated with `zod` before use.
 Translations live in [`web/src/i18n/`](web/src/i18n).
 
+The front is an installable web app. `vite-plugin-pwa`, configured in
+[`web/vite.config.ts`](web/vite.config.ts), writes the web manifest, renders
+the PNG icons from [`web/public/favicon.svg`](web/public/favicon.svg) at build
+time and generates a Workbox service worker that precaches the app shell: the
+hashed assets, `index.html`, the icons and logos. Navigations fall back to the
+cached `index.html`, except under `/api` and on `/health`. When a deployment
+ships a new service worker, it waits instead of taking over the open page,
+and [`UpdatePrompt`](web/src/components/UpdatePrompt.tsx) offers to reload
+onto the new version. The image's `static-web-server` settings
+([`web/sws.toml`](web/sws.toml)) cache only the hashed files under `/assets`
+for good and send `no-cache` for everything else, so `index.html`, `sw.js`
+and the manifest are revalidated and a deployment is seen at once.
+
 ### `charts/cinelist/`
 
 The Helm chart deploying both components, the CloudNativePG `Cluster`, and
@@ -164,6 +177,18 @@ deletes its whole history.
   every start from `ADMIN_USERNAME` and `ADMIN_PASSWORD`, any other account
   holding the role is demoted, and the API refuses to delete it or to issue it
   an invitation.
+- **The service worker caches the shell, never the API.** The app opens
+  instantly and offline from the precache, but every `/api` request goes to
+  the network untouched, with no runtime cache. Responses are authenticated
+  by a cookie and the data is live: a cached response would outlive the
+  session that fetched it, readable after signing out, and would show lists
+  and selections as they were rather than as they are. Google Fonts are the only runtime cache, as they are public and
+  versioned by URL.
+- **Updates wait for the user.** A new service worker does not call
+  `skipWaiting` on install: swapping the assets under a running page would
+  mix two versions of the front, possibly mid-selection. The page offers the
+  reload instead, and checks for a new version whenever it comes back to the
+  foreground, since an installed app can stay open for days.
 - **Minimal images.** Both images are `FROM scratch` with static musl
   binaries, run as UID 65532, and need no writable filesystem. They carry no
   shell and no HTTP client, hence no Docker `HEALTHCHECK`: health is checked
@@ -184,6 +209,8 @@ deletes its whole history.
   the database. JWTs are not stored at all.
 - Every API route is under `/api`; the route in front of the application does
   no path rewriting.
+- The service worker never caches nor answers a request under `/api`; it
+  only serves the files of the build.
 
 ## Limitations
 
@@ -198,3 +225,5 @@ deletes its whole history.
 - There is no self-service password reset: the administrator issues a new
   invitation link, and sends it by hand.
 - The interface exists in French and English only.
+- Offline, the app opens but cannot show or change anything: every piece of
+  data comes from the API, which is never cached.
