@@ -198,6 +198,7 @@ export const en: Messages = {
   },
   errors: {
     generic: "Something went wrong. Try again.",
+    offline: "You are offline. CineList reloads on its own as soon as the connection is back.",
     not_found: "Not found.",
     unauthenticated: "Your session expired, sign in again.",
     forbidden: "You cannot access this page.",

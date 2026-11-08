@@ -1,6 +1,6 @@
 import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
-import { ApiError } from "../lib/api";
+import { ApiError, isOfflineError } from "../lib/api";
 import { logger } from "../lib/logger";
 import { en } from "./en";
 import { fr } from "./fr";
@@ -50,6 +50,9 @@ export function initI18n(language: Language = storedLanguage() ?? browserLanguag
 export function errorKey(error: unknown): string {
   if (error instanceof ApiError && error.code in fr.errors) {
     return `errors.${error.code}`;
+  }
+  if (isOfflineError(error)) {
+    return "errors.offline";
   }
   return "errors.generic";
 }

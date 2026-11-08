@@ -1,4 +1,5 @@
 import {
+  onlineManager,
   QueryCache,
   QueryClient,
   useInfiniteQuery,
@@ -6,7 +7,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { ApiError, request, requestEmpty } from "./api";
+import { ApiError, isOfflineError, request, requestEmpty } from "./api";
 import { logger } from "./logger";
 import {
   createdUserSchema,
@@ -40,6 +41,10 @@ export const keys = {
 };
 
 export function createQueryClient(): QueryClient {
+  // onlineManager assumes it starts online and only learns otherwise from an
+  // `offline` event, so an app opened offline would never see the `online`
+  // transition that refetches failed queries on reconnect.
+  onlineManager.setOnline(navigator.onLine);
   const client: QueryClient = new QueryClient({
     queryCache: new QueryCache({
       onError: (error, query) => {
@@ -56,8 +61,15 @@ export function createQueryClient(): QueryClient {
     defaultOptions: {
       queries: {
         retry: (failures, error) =>
-          !(error instanceof ApiError && error.status < 500) && failures < 2,
+          !(error instanceof ApiError && error.status < 500) &&
+          !isOfflineError(error) &&
+          failures < 2,
         staleTime: 10_000,
+        // Offline, a query fails at once instead of pausing, so the page says it
+        // is offline rather than loading forever. This mode turns
+        // `refetchOnReconnect` off by default, and it is what recovers that page.
+        networkMode: "always",
+        refetchOnReconnect: true,
       },
     },
   });
