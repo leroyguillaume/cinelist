@@ -101,7 +101,7 @@ sequenceDiagram
         api-->>front: updated selection
     end
     front->>api: POST /api/v1/selections/{id}/verdicts (filmId, watched or abandoned)
-    api->>db: record the verdict, remove the film from the list
+    api->>db: record the verdict, remove the film from the list if watched
     api-->>front: completed, or the next candidate after an abandon
 ```
 
