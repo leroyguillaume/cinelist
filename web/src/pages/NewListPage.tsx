@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router";
 import { ErrorText } from "../components/ErrorText";
@@ -13,20 +13,38 @@ export function parseTitles(text: string): string[] {
     .filter((line) => line.length > 0);
 }
 
+type ParticipantRow = {
+  id: number;
+  name: string;
+};
+
 export function NewListPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const create = useCreateList();
   const [name, setName] = useState("");
-  const [participants, setParticipants] = useState(["", ""]);
+  const nextParticipantId = useRef(2);
+  const [participants, setParticipants] = useState<ParticipantRow[]>([
+    { id: 0, name: "" },
+    { id: 1, name: "" },
+  ]);
   const [films, setFilms] = useState("");
 
-  const names = participants.map((participant) => participant.trim()).filter(Boolean);
+  const names = participants.map((participant) => participant.name.trim()).filter(Boolean);
   const titles = parseTitles(films);
   const missing = filmsToAdd(titles.length, participants.length);
 
-  const updateParticipant = (index: number, value: string) =>
-    setParticipants((current) => current.map((name, i) => (i === index ? value : name)));
+  const updateParticipant = (id: number, value: string) =>
+    setParticipants((current) =>
+      current.map((participant) =>
+        participant.id === id ? { ...participant, name: value } : participant,
+      ),
+    );
+
+  const addParticipant = () => {
+    const id = nextParticipantId.current++;
+    setParticipants((current) => [...current, { id, name: "" }]);
+  };
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -62,7 +80,7 @@ export function NewListPage() {
           <legend className="field-label">{t("newList.participants")}</legend>
           <p className="hint">{t("newList.participantsHint")}</p>
           {participants.map((participant, index) => (
-            <div className="row" key={index}>
+            <div className="row" key={participant.id}>
               <span className="chip-number">{index + 1}</span>
               <input
                 className="input"
@@ -70,16 +88,20 @@ export function NewListPage() {
                 placeholder={t("newList.participantPlaceholder")}
                 maxLength={40}
                 required={index === 0}
-                value={participant}
-                onChange={(event) => updateParticipant(index, event.target.value)}
+                value={participant.name}
+                onChange={(event) => updateParticipant(participant.id, event.target.value)}
               />
               {participants.length > 1 && (
                 <button
                   type="button"
                   className="icon-button"
-                  aria-label={t("newList.removeParticipant", { name: participant || index + 1 })}
+                  aria-label={t("newList.removeParticipant", {
+                    name: participant.name || index + 1,
+                  })}
                   onClick={() =>
-                    setParticipants((current) => current.filter((_, i) => i !== index))
+                    setParticipants((current) =>
+                      current.filter((other) => other.id !== participant.id),
+                    )
                   }
                 >
                   <CloseIcon size={18} />
@@ -91,7 +113,7 @@ export function NewListPage() {
             <button
               type="button"
               className="button button-dashed button-small"
-              onClick={() => setParticipants((current) => [...current, ""])}
+              onClick={addParticipant}
             >
               <PlusIcon size={16} />
               {t("newList.addParticipant")}

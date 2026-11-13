@@ -17,4 +17,19 @@ describe("NewListPage", () => {
     await userEvent.type(films, "{enter}Alien");
     expect(screen.getByText("3 films : chacun élimine 1 film par sélection.")).toBeInTheDocument();
   });
+
+  it("keeps the following rows in place when a participant is removed", async () => {
+    await renderPage(<NewListPage />, "/lists/new");
+    await userEvent.type(screen.getByLabelText("Prénom 1"), "Alice");
+    await userEvent.type(screen.getByLabelText("Prénom 2"), "Bob");
+    await userEvent.click(screen.getByRole("button", { name: "Ajouter un participant" }));
+    const chloe = screen.getByLabelText("Prénom 3");
+    await userEvent.type(chloe, "Chloé");
+
+    await userEvent.click(screen.getByRole("button", { name: "Retirer Bob" }));
+
+    expect(chloe).toBeInTheDocument();
+    expect(chloe).toHaveValue("Chloé");
+    expect(screen.getByLabelText("Prénom 1")).toHaveValue("Alice");
+  });
 });
