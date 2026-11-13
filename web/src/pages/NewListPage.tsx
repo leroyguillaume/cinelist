@@ -62,7 +62,6 @@ export function NewListPage() {
           <legend className="field-label">{t("newList.participants")}</legend>
           <p className="hint">{t("newList.participantsHint")}</p>
           {participants.map((participant, index) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: rows are edited in place by position.
             <div className="row" key={index}>
               <span className="chip-number">{index + 1}</span>
               <input
