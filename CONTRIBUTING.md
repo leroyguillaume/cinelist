@@ -125,7 +125,7 @@ pre-commit run <hook-id> --all-files
 | `check-yaml`, `yamllint` | YAML syntax and style ([.yamllint.yaml](.yamllint.yaml)) | block style, no `---` |
 | `check-added-large-files`, `check-merge-conflict`, `detect-private-key` | accidental commits | remove the file or the marker |
 | `sqlfluff-lint` | SQL style ([.sqlfluff](.sqlfluff)) | `sqlfluff fix <file>` |
-| `biome-check` | TypeScript format and lint ([biome.json](biome.json)) | `npm --prefix web exec biome -- check --write .` |
+| `biome-check` | TypeScript format and lint ([biome.json](biome.json)), with the Biome version locked in `web/package-lock.json` | `npm --prefix web exec biome -- check --write .` |
 | `tsc` | strict type checking of the front | fix the types |
 | `cargo-fmt`, `cargo-clippy` | Rust format, pedantic lints as errors | `cargo fmt --all`, then fix the lints |
 | `hadolint`, `trivy-dockerfile` | Dockerfiles | fix the Dockerfile |
