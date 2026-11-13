@@ -47,6 +47,12 @@ updates:
     cooldown:
       default-days: 3
     groups:
+      # react-i18next peers on a single i18next major: bumped one at a time,
+      # each PR fails to resolve.
+      i18next:
+        patterns:
+          - i18next
+          - react-i18next
       npm:
         update-types:
           - minor
