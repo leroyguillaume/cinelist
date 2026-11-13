@@ -479,7 +479,7 @@ async fn a_selection_runs_to_a_watched_film(pool: PgPool) {
     assert_eq!(watched.body["verdicts"][1]["filmTitle"], "Drive");
 
     let list = alex.get(&format!("/api/v1/lists/{list_id}")).await.body;
-    assert_eq!(list["filmCount"], 1);
+    assert_eq!(list["filmCount"], 2);
     assert!(list["activeSelection"].is_null());
     let sam_id = list["participants"][1]["id"].clone();
     assert_eq!(list["nextStarterId"], sam_id);
@@ -503,6 +503,47 @@ async fn a_selection_runs_to_a_watched_film(pool: PgPool) {
     assert_eq!(stats.body["worstPlace"], 3);
     assert_eq!(stats.body["eliminatedBy"][0]["participantName"], "Alex");
     assert_eq!(stats.body["recentRuns"][0]["winnerTitle"], "Drive");
+}
+
+#[sqlx::test(migrator = "MIGRATOR")]
+async fn an_abandoned_film_stays_in_the_list(pool: PgPool) {
+    let client = Client::new(pool).await;
+    let mut alex = client.user("alex").await;
+    let list = alex.create_list(&["Alex"], &["Heat", "Drive"]).await;
+    let list_id = id(&list);
+    let selection = alex
+        .post(&format!("/api/v1/lists/{list_id}/selections"), json!({}))
+        .await
+        .body;
+    let selection_id = id(&selection);
+    alex.post(
+        &format!("/api/v1/selections/{selection_id}/eliminations"),
+        json!({ "filmId": film_id(&list, "Heat") }),
+    )
+    .await;
+
+    let verdicts = format!("/api/v1/selections/{selection_id}/verdicts");
+    let abandoned = alex
+        .post(
+            &verdicts,
+            json!({ "filmId": film_id(&list, "Drive"), "outcome": "abandoned" }),
+        )
+        .await;
+    assert_eq!(abandoned.body["candidate"]["title"], "Heat");
+    alex.post(
+        &verdicts,
+        json!({ "filmId": film_id(&list, "Heat"), "outcome": "watched" }),
+    )
+    .await;
+
+    let list = alex.get(&format!("/api/v1/lists/{list_id}")).await.body;
+    let titles: Vec<&str> = list["films"]
+        .as_array()
+        .expect("films")
+        .iter()
+        .filter_map(|film| film["title"].as_str())
+        .collect();
+    assert_eq!(titles, ["Drive"]);
 }
 
 #[sqlx::test(migrator = "MIGRATOR")]

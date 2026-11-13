@@ -92,7 +92,7 @@ pub fn routes() -> ApiRouter<AppState> {
                     .id("createVerdict")
                     .summary("Say whether the chosen film was watched")
                     .description(
-                        "Either way the film leaves the list. When it is abandoned, the film eliminated last \
+                        "A watched film leaves the list. An abandoned one stays, and the film eliminated last \
                          becomes the candidate. Returns the updated selection.",
                     )
                     .response::<201, Json<SelectionResponse>>()
@@ -547,7 +547,9 @@ async fn judge(
         },
     )
     .await?;
-    db::films::delete(&mut *tx, candidate.film_id, snapshot.list.id).await?;
+    if outcome == Outcome::Watched {
+        db::films::delete(&mut *tx, candidate.film_id, snapshot.list.id).await?;
+    }
     let mut outcomes: Vec<Outcome> = selection
         .verdicts
         .iter()
